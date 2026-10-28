@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi pauta</title>
+<meta name="description" content="Checklist diario de porciones de tu pauta de alimentación, con seguimiento mensual. Creada por Nta. Constanza (Demi) Sánchez.">
+<meta name="theme-color" content="#D63F7E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mi pauta">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: app de una columna, 3 pestañas (Hoy, Mes, Mi pauta) con barra inferior fija */
+:root{
+  --bg:#FFF4F8; --surface:#FFFFFF; --ink:#4A1F34; --muted:#8C6577;
+  --accent:#D63F7E; --accent-ink:#FFFFFF; --soft:#FAD3E3; --line:#F2D3DF;
+  --deep:#8E2756; --ok:#2E8B63; --water:#3E8FB8; --amber:#FBE6BE; --green:#DCEFD2;
+  --font-display:'Fraunces',Georgia,serif; --font-body:'DM Sans',system-ui,sans-serif;
+  --pad-side:max(16px, env(safe-area-inset-left, 0px));
+  --pad-side-r:max(16px, env(safe-area-inset-right, 0px));
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1F1119; --surface:#2C1A25; --ink:#FBE4EE; --muted:#C39AAD;
+  --accent:#F27DAA; --accent-ink:#2A0F1C; --soft:#4A2638; --line:#44283A; --deep:#F9B3CE; --ok:#6FD3A4; --water:#7CC4E8; --amber:#5A4727; --green:#2F4A33; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1F1119; --surface:#2C1A25; --ink:#FBE4EE; --muted:#C39AAD;
+  --accent:#F27DAA; --accent-ink:#2A0F1C; --soft:#4A2638; --line:#44283A; --deep:#F9B3CE; --ok:#6FD3A4; --water:#7CC4E8; --amber:#5A4727; --green:#2F4A33; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.45;
+  padding-block:0 0;padding-left:var(--pad-side);padding-right:var(--pad-side-r)}
+.app{max-width:480px;margin:0 auto;padding-block:20px 112px;display:flex;flex-direction:column;gap:16px;min-width:0}
+h1,h2,h3{font-family:var(--font-display);margin:0;text-wrap:balance}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.brand h1{font-size:30px;color:var(--deep);letter-spacing:-.01em}
+.brand .date{font-size:14px;color:var(--muted);text-align:right;min-width:0;overflow-wrap:anywhere}
+.brand .date::first-letter,.detail h3::first-letter{text-transform:uppercase}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px;min-width:0}
+.hero{background:var(--accent);color:var(--accent-ink);border:0;display:flex;flex-direction:column;gap:12px}
+.hero .big{font-family:var(--font-display);font-size:40px;line-height:1;font-weight:700;font-variant-numeric:tabular-nums}
+.hero .big small{font-size:18px;font-weight:600;opacity:.85}
+.hero p{margin:0;font-size:15px;opacity:.95}
+.bar{height:10px;border-radius:99px;background:color-mix(in srgb,var(--accent-ink) 25%,transparent);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent-ink);border-radius:99px;transition:width .3s}
+.group{display:flex;flex-direction:column;gap:12px}
+.group-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.group-head h3{font-size:19px}
+.count{font-variant-numeric:tabular-nums;font-size:14px;font-weight:700;color:var(--deep);background:var(--soft);border-radius:99px;padding:2px 10px;white-space:nowrap}
+.count.done{background:var(--ok);color:#fff}
+.sect{font-family:var(--font-display);font-size:20px;color:var(--deep);margin:8px 0 -4px}
+.ports{display:flex;flex-wrap:wrap;gap:10px}
+.port{width:48px;height:48px;border-radius:50%;border:2px solid var(--accent);background:transparent;color:var(--accent-ink);
+  display:grid;place-items:center;cursor:pointer;padding:0;transition:background .15s,transform .1s}
+.port svg{width:24px;height:24px;opacity:0;transition:opacity .15s}
+.port[aria-pressed="true"]{background:var(--accent)}
+.port[aria-pressed="true"] svg{opacity:1}
+.port.w{border-color:var(--water)}
+.port.w[aria-pressed="true"]{background:var(--water)}
+.port[aria-pressed="mixed"]{background:linear-gradient(90deg,var(--accent) 50%,transparent 50%)}
+.port.sm{width:34px;height:34px;align-self:center}
+.port.sm svg{width:18px;height:18px}
+.port:active{transform:scale(.92)}
+.hlist{display:flex;flex-direction:column;gap:6px}
+.hr{display:grid;grid-template-columns:40px 1fr;gap:10px;align-items:center;text-align:left;width:100%;border:2px solid transparent;border-radius:14px;padding:8px 10px;font:inherit;color:var(--ink);cursor:pointer;background:var(--soft)}
+.hr[data-t="a"]{background:var(--amber)}
+.hr[data-t="g"]{background:var(--green)}
+.hr[data-t="n"]{background:var(--surface);border-color:var(--line)}
+.hr .num{font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--deep);text-align:center}
+.hr b{display:block;font-size:14px;letter-spacing:.02em;text-transform:uppercase}
+.hr small{display:block;font-size:12px;color:var(--muted);line-height:1.3}
+.hr[aria-pressed="true"]{border-color:var(--deep);box-shadow:inset 0 0 0 2px var(--surface)}
+.act{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.act .step button{border-color:var(--accent)}
+.act output{min-width:64px}
+.txt{width:100%;min-width:0;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;padding:0 12px}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--deep);outline-offset:2px}
+.empty{text-align:center;color:var(--muted);display:flex;flex-direction:column;gap:8px}
+.credit{text-align:center;font-size:13px;color:var(--muted);margin:4px 0 0;display:flex;flex-direction:column;gap:2px}
+.credit b{color:var(--deep);font-weight:700}
+.credit a{color:var(--deep);font-weight:700;text-decoration:none}
+/* Mes */
+.month-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.month-head h2{font-size:22px;text-transform:capitalize;color:var(--deep)}
+.nav{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--deep);cursor:pointer;display:grid;place-items:center;padding:0}
+.nav:disabled{opacity:.35;cursor:default}
+.nav svg{width:20px;height:20px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 8px;text-align:center;min-width:0}
+.stat b{display:block;font-family:var(--font-display);font-size:26px;color:var(--deep);font-variant-numeric:tabular-nums;line-height:1.1}
+.stat span{font-size:12px;color:var(--muted);line-height:1.2;display:block}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.dow{text-align:center;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.day{aspect-ratio:1;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:14px;
+  font-variant-numeric:tabular-nums;cursor:pointer;padding:0;display:grid;place-items:center;min-width:0}
+.day.blank{visibility:hidden}
+.day.future{opacity:.4;cursor:default}
+.day.today{outline:2px solid var(--deep);outline-offset:1px}
+.day.sel{box-shadow:0 0 0 3px var(--soft)}
+.day[data-l="1"]{background:color-mix(in srgb,var(--accent) 25%,var(--surface))}
+.day[data-l="2"]{background:color-mix(in srgb,var(--accent) 50%,var(--surface))}
+.day[data-l="3"]{background:color-mix(in srgb,var(--accent) 75%,var(--surface));color:var(--accent-ink)}
+.day[data-l="4"]{background:var(--accent);color:var(--accent-ink);font-weight:700;border-color:var(--accent)}
+.legend{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);justify-content:center;flex-wrap:wrap}
+.legend i{width:16px;height:16px;border-radius:5px;border:1px solid var(--line);display:inline-block}
+.detail h3{font-size:18px;margin-bottom:8px}
+.detail ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.detail li{display:flex;justify-content:space-between;gap:12px;font-size:15px;border-bottom:1px dashed var(--line);padding-bottom:6px}
+.detail li b{font-variant-numeric:tabular-nums;color:var(--deep);text-align:right}
+.detail li.x span{color:var(--muted)}
+/* Configuración */
+.intro{margin:0;color:var(--muted);font-size:15px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:14px;font-weight:700;color:var(--deep)}
+.row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
+.row.std{grid-template-columns:1fr auto}
+.row input[type=text]{width:100%;min-width:0;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;padding:0 12px}
+.row.wrow{grid-template-columns:1fr auto}
+.row .lbl{font-weight:500}
+.row .lbl small{display:block;color:var(--muted);font-size:12px}
+.step{display:flex;align-items:center;gap:4px}
+.step button{width:40px;height:40px;border-radius:50%;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:22px;line-height:1;cursor:pointer;padding:0}
+.step output{min-width:24px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.tog{height:40px;border-radius:99px;border:1px solid var(--accent);background:transparent;color:var(--accent);font:inherit;font-weight:700;font-size:14px;padding:0 14px;cursor:pointer;min-width:84px}
+.tog[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.del{width:60px;height:44px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;font:inherit;font-size:12px;font-weight:700;padding:0}
+.del.arm{background:#C23A4E;color:#fff;border-color:#C23A4E}
+.add{display:flex;gap:8px}
+.add input{width:100%;min-width:0;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;padding:0 12px}
+.btn{height:44px;border-radius:12px;border:0;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:700;padding:0 16px;cursor:pointer;white-space:nowrap}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.note{font-size:13px;color:var(--muted);margin:0}
+/* Barra inferior */
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);
+  padding:8px var(--pad-side-r) calc(8px + env(safe-area-inset-bottom,0px)) var(--pad-side);z-index:5}
+.tabs div{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.tab{border:0;background:transparent;color:var(--muted);font:inherit;font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border-radius:12px;cursor:pointer}
+.tab svg{width:24px;height:24px}
+.tab[aria-selected="true"]{color:var(--deep);background:var(--soft)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+.tabs{padding-top:8px}
+</style>
+</head>
+<body>
+
+<main class="app" id="app"></main>
+<nav class="tabs" aria-label="Secciones"><div role="tablist">
+  <button class="tab" role="tab" data-tab="hoy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 9.5"/></svg>Hoy</button>
+  <button class="tab" role="tab" data-tab="mes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>Mes</button>
+  <button class="tab" role="tab" data-tab="pauta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Mi pauta</button>
+</div></nav>
+
+<script>
+(function(){
+var KEY='mipauta.v2';
+var DEFAULTS=[
+  {id:'cer',name:'Cereales',n:3,std:1},
+  {id:'pro',name:'Proteína',n:3,std:1},
+  {id:'vli',name:'Verdura libre consumo',n:1,std:1,free:1},
+  {id:'vge',name:'Verdura general',n:2,std:1},
+  {id:'fru',name:'Fruta',n:2,std:1},
+  {id:'lac',name:'Lácteos',n:2,std:1},
+  {id:'ace',name:'Aceites y grasas',n:2,std:1},
+  {id:'lip',name:'Alimentos ricos en lípidos',n:1,std:1}
+];
+function fresh(){return {groups:DEFAULTS.map(function(g){return Object.assign({},g)}),water:8,name:'',log:{},custom:false}}
+var state=fresh();
+try{var raw=localStorage.getItem(KEY);if(raw){var p=JSON.parse(raw);if(p&&p.groups&&p.log)state=p}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dip=e;if(tab==='pauta')render()});
+function standalone(){return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true}
+var tab='hoy', viewY, viewM, sel=null, armed=null, dip=null;
+var CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+function pad(n){return n<10?'0'+n:''+n}
+function key(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function parseKey(k){var a=k.split('-');return new Date(+a[0],+a[1]-1,+a[2])}
+function todayKey(){return key(new Date())}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function dec(x){return x.toFixed(1).replace('.',',')}
+function fmt(n){return String(Math.round(n*2)/2).replace('.',',')}
+function active(){return state.groups.filter(function(g){return g.n>0})}
+function goalsNow(){var o={};state.groups.forEach(function(g){if(g.n>0&&!g.free)o[g.id]=g.n});return o}
+function touch(r){r.goals=goalsNow();r.names={};state.groups.forEach(function(g){r.names[g.id]=g.name})}
+function rec(k,create){var r=state.log[k];if(!r&&create){r=state.log[k]={goals:{},done:{},extra:{},names:{}}}if(r){r.extra=r.extra||{};touch(r)}return r}
+function hasAny(r){if(!r)return false;var x=r.extra||{};return Object.keys(r.done).some(function(i){return r.done[i]>0})||!!x.hunger||x.water>0||x.min>0||!!x.act}
+function stats(k){
+  var r=state.log[k],today=k===todayKey(),goals=(today||!r)?goalsNow():r.goals,d=0,t=0;
+  Object.keys(goals).forEach(function(id){t+=goals[id];d+=Math.min(goals[id],(r&&r.done[id])||0)});
+  return {done:d,total:t,has:hasAny(r)};
+}
+function pct(k){var s=stats(k);return s.total?s.done/s.total:0}
+function level(p){return p===0?0:p<.34?1:p<.67?2:p<1?3:4}
+var MES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+var HLAB=['','Hambre extrema','Mucha hambre','Hambre','Un poco de hambre','Neutral','Casi satisfecho','Lleno y satisfecho','Muy lleno','Lleno a disgusto','Enfermo de lleno'];
+var HDESC=['','Se siente débil, mareado, con vértigo u otros síntomas incómodos.','Irritable o ansioso, quiere comer todo lo que ve.','Sin incomodidad. Señales claras de que su cuerpo necesita comida.','Leves señales de que su cuerpo necesita comida. Puede esperar.','Ni con hambre, ni lleno.','En proceso de quedar lleno, pero todavía cómodo. Podría comer más.','Lleno, pero no incómodo. Ya no tiene hambre.','Algo incómodo.','Saciado e incómodo.','Malestar e incomodidad. No quiere ni ver comida.'];
+var HTYPE={3:'a',7:'a',4:'g',6:'g',5:'n'};
+
+function viewHoy(){
+  var k=todayKey(), r=state.log[k], x=(r&&r.extra)||{}, s=stats(k), now=new Date();
+  var date=now.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+  var msg=!s.total?'Agrega tus porciones en la pestaña Mi pauta.':s.done===s.total?'¡Completaste tu pauta de hoy!':s.done===0?'Marca cada porción cuando la comas.':'Vas bien, te faltan '+fmt(s.total-s.done)+'.';
+  var h='<header class="brand"><h1>Mi pauta</h1><div class="date">'+esc(date)+'</div></header>';
+  h+='<section class="card hero"><div class="big">'+fmt(s.done)+' <small>de '+fmt(s.total)+' porciones</small></div><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="'+s.total+'" aria-valuenow="'+s.done+'"><i style="width:'+(s.total?s.done/s.total*100:0)+'%"></i></div><p>'+msg+'</p></section><p class="note">Toca un círculo una vez para media porción y dos veces para una porción completa. Toca otra vez para desmarcar.</p>';
+  var act=active();
+  if(!act.length){h+='<section class="card empty"><h3>Aún no hay porciones</h3><p>Ve a Mi pauta e ingresa las porciones diarias que te indicó tu nutricionista.</p></section>'}
+  act.forEach(function(g){
+    var n=g.free?1:g.n, d=Math.min(n,(r&&r.done[g.id])||0), btns='';
+    for(var i=0;i<Math.ceil(n);i++){var cap=Math.min(1,n-i),v=Math.max(0,Math.min(cap,d-i)),st=v>=cap?'true':(v>0?'mixed':'false');btns+='<button class="port'+(cap<1?' sm':'')+'" data-g="'+g.id+'" data-i="'+i+'" aria-pressed="'+st+'" aria-label="'+esc(g.name)+(g.free?'':(cap<1?' media porción':' porción '+(i+1)))+'">'+CHECK+'</button>'}
+    var pill=g.free?(d?'Listo':'A libre demanda'):fmt(d)+' / '+fmt(g.n);
+    h+='<section class="card group"><div class="group-head"><h3>'+esc(g.name)+'</h3><span class="count'+(d===n?' done':'')+'">'+pill+'</span></div><div class="ports">'+btns+'</div></section>';
+  });
+  h+='<h2 class="sect">Cómo estuvo mi día</h2>';
+  var hb='';for(var j=1;j<=10;j++)hb+='<button class="hr" data-h="'+j+'" data-t="'+(HTYPE[j]||'')+'" aria-pressed="'+(x.hunger===j)+'"><span class="num">#'+j+'</span><span><b>'+HLAB[j]+'</b><small>'+HDESC[j]+'</small></span></button>';
+  h+='<section class="card group"><div class="group-head"><h3>Escala de hambre</h3><span class="count">'+(x.hunger?'#'+x.hunger:'Sin registrar')+'</span></div><div class="hlist">'+hb+'</div></section>';
+  if(state.water>0){
+    var wd=Math.min(state.water,x.water||0),wb='';
+    for(var w=0;w<state.water;w++)wb+='<button class="port w" data-w="'+w+'" aria-pressed="'+(w<wd)+'" aria-label="Vaso de agua '+(w+1)+'">'+CHECK+'</button>';
+    h+='<section class="card group"><div class="group-head"><h3>Agua</h3><span class="count'+(wd===state.water?' done':'')+'">'+wd+' / '+state.water+' vasos</span></div><div class="ports">'+wb+'</div><p class="note">Cada vaso son 200 ml. Llevas '+(wd*200)+' ml de '+(state.water*200)+' ml.</p></section>';
+  }
+  h+='<section class="card group"><div class="group-head"><h3>Actividad física</h3><span class="count'+(x.min>0?' done':'')+'">'+((x.min||0)>0?x.min+' min':'Sin actividad')+'</span></div><div class="act"><div class="step"><button data-min="-10" aria-label="Menos 10 minutos">−</button><output>'+(x.min||0)+' min</output><button data-min="10" aria-label="Más 10 minutos">+</button></div></div><input class="txt" type="text" id="actxt" data-act="1" maxlength="60" placeholder="¿Qué hiciste? Caminata, gimnasio..." value="'+esc(x.act||'')+'" aria-label="Qué actividad hiciste"></section>';
+  return h;
+}
+
+function viewMes(){
+  var now=new Date(); if(viewY==null){viewY=now.getFullYear();viewM=now.getMonth()}
+  var first=new Date(viewY,viewM,1), days=new Date(viewY,viewM+1,0).getDate(), lead=(first.getDay()+6)%7, tk=todayKey();
+  var sum=0,cnt=0,full=0,hs=[],ws=[],am=0;
+  for(var d=1;d<=days;d++){var kk=viewY+'-'+pad(viewM+1)+'-'+pad(d);if(kk>tk)break;var s=stats(kk);if(s.has){cnt++;sum+=pct(kk);if(s.total&&s.done===s.total)full++}
+    var rr=state.log[kk],ex=rr&&rr.extra;if(ex){if(ex.hunger)hs.push(ex.hunger);if(ex.water>0)ws.push(ex.water);if(ex.min>0)am++}}
+  function avg(a){return a.length?a.reduce(function(p,c){return p+c},0)/a.length:null}
+  var streak=0,c=new Date();if(!stats(key(c)).has)c.setDate(c.getDate()-1);
+  while(stats(key(c)).has&&pct(key(c))>=.8&&streak<400){streak++;c.setDate(c.getDate()-1)}
+  var atNow=viewY===now.getFullYear()&&viewM===now.getMonth();
+  var ah=avg(hs),aw=avg(ws);
+  var h='<header class="brand"><h1>Mi mes</h1>'+(state.name?'<div class="date">'+esc(state.name)+'</div>':'')+'</header>';
+  h+='<div class="month-head"><button class="nav" data-nav="-1" aria-label="Mes anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5-7 7 7 7"/></svg></button><h2>'+MES[viewM]+' '+viewY+'</h2><button class="nav" data-nav="1" aria-label="Mes siguiente"'+(atNow?' disabled':'')+'><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg></button></div>';
+  h+='<div class="stats"><div class="stat"><b>'+(cnt?Math.round(sum/cnt*100)+'%':'–')+'</b><span>cumplimiento promedio</span></div><div class="stat"><b>'+full+'</b><span>días con pauta completa</span></div><div class="stat"><b>'+streak+'</b><span>días seguidos con 80% o más</span></div></div>';
+  h+='<div class="stats"><div class="stat"><b>'+(ah!==null?dec(ah):'–')+'</b><span>hambre promedio (1 a 10)</span></div><div class="stat"><b>'+(aw!==null?dec(aw):'–')+'</b><span>vasos de agua por día</span></div><div class="stat"><b>'+am+'</b><span>días con actividad física</span></div></div>';
+  h+='<section class="card"><div class="cal">';
+  ['L','M','M','J','V','S','D'].forEach(function(x){h+='<div class="dow">'+x+'</div>'});
+  for(var i=0;i<lead;i++)h+='<div class="day blank"></div>';
+  for(var d2=1;d2<=days;d2++){
+    var k2=viewY+'-'+pad(viewM+1)+'-'+pad(d2), fut=k2>tk, st=stats(k2), l=st.has?level(pct(k2)):0;
+    h+='<button class="day'+(fut?' future':'')+(k2===tk?' today':'')+(k2===sel?' sel':'')+'" data-l="'+l+'" data-k="'+k2+'"'+(fut?' disabled':'')+'>'+d2+'</button>';
+  }
+  h+='</div></section><div class="legend">Menos<i style="background:color-mix(in srgb,var(--accent) 25%,var(--surface))"></i><i style="background:color-mix(in srgb,var(--accent) 50%,var(--surface))"></i><i style="background:color-mix(in srgb,var(--accent) 75%,var(--surface))"></i><i style="background:var(--accent)"></i>Pauta completa</div>';
+  if(sel&&sel.slice(0,7)===viewY+'-'+pad(viewM+1)){
+    var r=state.log[sel], dd=parseKey(sel), s2=stats(sel), x=(r&&r.extra)||{};
+    var goals=(sel===tk||!r)?goalsNow():r.goals, names={};
+    state.groups.forEach(function(g){names[g.id]=g.name});
+    h+='<section class="card detail"><h3>'+esc(dd.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'}))+'</h3><ul>';
+    Object.keys(goals).forEach(function(id){var nm=(r&&r.names&&r.names[id])||names[id]||'Otro';h+='<li><span>'+esc(nm)+'</span><b>'+fmt(Math.min(goals[id],(r&&r.done[id])||0))+' / '+fmt(goals[id])+'</b></li>'});
+    state.groups.forEach(function(g){if(g.free&&r&&r.done[g.id])h+='<li><span>'+esc(g.name)+'</span><b>Sí</b></li>'});
+    h+='<li class="x"><span>Hambre</span><b>'+(x.hunger?'#'+x.hunger+' · '+HLAB[x.hunger]:'Sin registro')+'</b></li><li class="x"><span>Agua</span><b>'+(x.water>0?x.water+' vasos':'Sin registro')+'</b></li><li class="x"><span>Actividad física</span><b>'+(x.min>0?x.min+' min'+(x.act?' · '+esc(x.act):''):(x.act?esc(x.act):'Sin actividad'))+'</b></li>';
+    h+='</ul>'+(s2.has?'':'<p class="note" style="margin-top:8px">No registraste nada este día.</p>')+'</section>';
+  }
+  return h;
+}
+
+function viewPauta(){
+  var h='<header class="brand"><h1>Mi pauta</h1></header><p class="intro">Ingresa las porciones diarias que te dejó tu nutricionista, también en medias porciones (0,5). Los grupos en 0 no aparecen en Hoy, y puedes cambiar los números cuando tu pauta cambie.</p>';
+  if(!state.custom)h+='<p class="note">Los números que ves son un ejemplo. Reemplázalos por los de tu pauta.</p>';
+  h+='<section class="card field"><label for="pname">Mi nombre</label><input class="txt" type="text" id="pname" data-pname="1" maxlength="40" value="'+esc(state.name||'')+'" placeholder="Aparece en tu resumen mensual"></section>';
+  h+='<section class="card" style="display:flex;flex-direction:column;gap:12px">';
+  state.groups.forEach(function(g){
+    h+='<div class="row'+(g.std?' std':'')+'"><input type="text" id="n-'+g.id+'" data-name="'+g.id+'" value="'+esc(g.name)+'" aria-label="Nombre del grupo" maxlength="40">';
+    if(g.free)h+='<button class="tog" data-free="'+g.id+'" aria-pressed="'+(g.n>0)+'">'+(g.n>0?'Activa':'Oculta')+'</button>';
+    else h+='<div class="step"><button data-step="-0.5" data-g="'+g.id+'" aria-label="Quitar media porción de '+esc(g.name)+'">−</button><output>'+fmt(g.n)+'</output><button data-step="0.5" data-g="'+g.id+'" aria-label="Agregar media porción de '+esc(g.name)+'">+</button></div>';
+    if(!g.std)h+='<button class="del'+(armed===g.id?' arm':'')+'" data-del="'+g.id+'" aria-label="Eliminar '+esc(g.name)+'">'+(armed===g.id?'¿Borrar?':'Quitar')+'</button>';
+    h+='</div>';
+  });
+  h+='<form class="add" id="addf"><input type="text" id="newname" placeholder="Otro grupo, por ejemplo Legumbres" maxlength="40" aria-label="Nombre del nuevo grupo"><button class="btn" type="submit">Agregar</button></form></section>';
+  h+='<section class="card"><div class="row wrow"><div class="lbl">Agua al día<small>Cada vaso son 200 ml. En 0 no se muestra.</small></div><div class="step"><button data-wstep="-1" aria-label="Menos vasos">−</button><output>'+state.water+'</output><button data-wstep="1" aria-label="Más vasos">+</button></div></div></section>';
+  if(!standalone()){h+='<section class="card" style="display:flex;flex-direction:column;gap:10px"><h3 style="font-size:18px">Instalar en mi celular</h3>'+(dip?'<button class="btn" id="install">Instalar Mi pauta</button>':'')+'<p class="note">Android: menú de tres puntos y Instalar app. iPhone: botón Compartir y Agregar a inicio.</p></section>'}
+  h+='<button class="btn ghost" id="reset">'+(armed==='reset'?'Toca otra vez para borrar todo el historial':'Borrar historial y volver al ejemplo')+'</button>';
+  return h;
+}
+
+function render(){
+  var v=tab==='hoy'?viewHoy():tab==='mes'?viewMes():viewPauta();
+  document.getElementById('app').innerHTML=v+'<p class="credit"><span>App creada por <b>Nta. Constanza (Demi) Sánchez</b></span><a href="https://www.instagram.com/nutridemi" target="_blank" rel="noopener">Instagram @nutridemi</a></p>';
+  document.querySelectorAll('.tab').forEach(function(b){b.setAttribute('aria-selected',b.dataset.tab===tab)});
+}
+function syncToday(){var r=state.log[todayKey()];if(r)touch(r)}
+function uid(){return 'g'+Date.now().toString(36)+Math.floor(Math.random()*999)}
+function addGroup(name){name=name.trim();if(!name)return;state.groups.push({id:uid(),name:name,n:1});state.custom=true;syncToday();save();render()}
+function gById(id){return state.groups.filter(function(x){return x.id===id})[0]}
+
+document.addEventListener('click',function(e){
+  var t=e.target.closest('button');if(!t)return;
+  var ds=t.dataset;
+  if(ds.tab){tab=ds.tab;armed=null;window.scrollTo(0,0);render();return}
+  if(t.classList.contains('port')&&ds.g){var r=rec(todayKey(),true),i=+ds.i,cur=r.done[ds.g]||0,gg=gById(ds.g),gn=gg.free?1:gg.n,cap=Math.min(1,gn-i),v0=Math.max(0,Math.min(cap,cur-i)),nx;if(gg.free)nx=v0?0:1;else if(cap<1)nx=v0?0:0.5;else nx=v0===0?0.5:(v0===0.5?1:0);r.done[ds.g]=i+nx;save();render();return}
+  if(ds.w!==undefined){var r2=rec(todayKey(),true),i2=+ds.w,c2=r2.extra.water||0;r2.extra.water=(i2+1===c2)?i2:i2+1;save();render();return}
+  if(ds.h){var r3=rec(todayKey(),true),v=+ds.h;r3.extra.hunger=r3.extra.hunger===v?0:v;save();render();return}
+  if(ds.min){var r4=rec(todayKey(),true);r4.extra.min=Math.max(0,Math.min(300,(r4.extra.min||0)+ +ds.min));save();render();return}
+  if(ds.nav){var m=viewM+ +ds.nav;viewY+=Math.floor(m/12);viewM=((m%12)+12)%12;sel=null;render();return}
+  if(ds.k){sel=ds.k;render();return}
+  if(ds.step){var g=gById(ds.g);g.n=Math.max(0,Math.min(12,g.n+ +ds.step));state.custom=true;syncToday();save();render();return}
+  if(ds.free){var f=gById(ds.free);f.n=f.n>0?0:1;state.custom=true;syncToday();save();render();return}
+  if(ds.wstep){state.water=Math.max(0,Math.min(20,state.water+ +ds.wstep));state.custom=true;save();render();return}
+  if(ds.del){if(armed===ds.del){state.groups=state.groups.filter(function(x){return x.id!==armed});armed=null;state.custom=true;syncToday();save()}else armed=ds.del;render();return}
+  if(t.id==='install'&&dip){dip.prompt();dip=null;render();return}
+  if(t.id==='reset'){if(armed==='reset'){state=fresh();armed=null;sel=null;save()}else armed='reset';render();return}
+});
+document.addEventListener('input',function(e){
+  var t=e.target,ds=t.dataset;if(!ds)return;
+  if(ds.name){var g=gById(ds.name);if(g){g.name=t.value;state.custom=true;syncToday();save()}}
+  else if(ds.pname){state.name=t.value;save()}
+  else if(ds.act){var r=rec(todayKey(),true);r.extra.act=t.value;save()}
+});
+document.addEventListener('submit',function(e){e.preventDefault();var i=document.getElementById('newname');if(i)addGroup(i.value)});
+var lastDay=todayKey();
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&todayKey()!==lastDay){lastDay=todayKey();render()}});
+render();
+if('serviceWorker' in navigator)window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});
+})();
+</script>
+
+</body>
+</html>
