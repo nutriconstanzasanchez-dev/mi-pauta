@@ -141,6 +141,14 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 .tab svg{width:24px;height:24px}
 .tab[aria-selected="true"]{color:var(--deep);background:var(--soft)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* Bienvenida */
+.welcome{min-height:calc(100svh - 100px);display:flex;flex-direction:column;justify-content:center;gap:20px}
+.welcome .msg{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:28px 22px;display:flex;flex-direction:column;gap:16px}
+.welcome h2{font-size:30px;color:var(--deep);line-height:1.15}
+.welcome p{margin:0;font-size:17px;line-height:1.6}
+.welcome .em{font-family:var(--font-display);font-size:20px;color:var(--deep);line-height:1.4}
+.welcome .sign{font-family:var(--font-display);color:var(--deep);font-weight:600;margin-top:4px}
+.btn.big{height:54px;font-size:17px;width:100%;border-radius:16px}
 
 :root{color-scheme:light;padding-top:env(safe-area-inset-top,0px)}
 body{margin:0}
@@ -170,7 +178,7 @@ var DEFAULTS=[
   {id:'ace',name:'Aceites y grasas',n:2,std:1},
   {id:'lip',name:'Alimentos ricos en lípidos',n:1,std:1}
 ];
-function fresh(){return {groups:DEFAULTS.map(function(g){return Object.assign({},g)}),water:8,name:'',log:{},custom:false}}
+function fresh(){return {groups:DEFAULTS.map(function(g){return Object.assign({},g)}),water:8,name:'',log:{},custom:false,welcomed:false}}
 var state=fresh();
 try{var raw=localStorage.getItem(KEY);if(raw){var p=JSON.parse(raw);if(p&&p.groups&&p.log)state=p}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
@@ -279,13 +287,24 @@ function viewPauta(){
   });
   h+='<form class="add" id="addf"><input type="text" id="newname" placeholder="Otro grupo, por ejemplo Legumbres" maxlength="40" aria-label="Nombre del nuevo grupo"><button class="btn" type="submit">Agregar</button></form></section>';
   h+='<section class="card"><div class="row wrow"><div class="lbl">Agua al día<small>Cada vaso son 200 ml. En 0 no se muestra.</small></div><div class="step"><button data-wstep="-1" aria-label="Menos vasos">−</button><output>'+state.water+'</output><button data-wstep="1" aria-label="Más vasos">+</button></div></div></section>';
+  h+='<button class="btn ghost" id="showwelcome">Leer el mensaje de bienvenida</button>';
   if(!standalone()){h+='<section class="card" style="display:flex;flex-direction:column;gap:10px"><h3 style="font-size:18px">Instalar en mi celular</h3>'+(dip?'<button class="btn" id="install">Instalar Mi pauta</button>':'')+'<p class="note">Android: menú de tres puntos y Instalar app. iPhone: botón Compartir y Agregar a inicio.</p></section>'}
   h+='<button class="btn ghost" id="reset">'+(armed==='reset'?'Toca otra vez para borrar todo el historial':'Borrar historial y volver al ejemplo')+'</button>';
   return h;
 }
 
+var welcome=false;
+function viewWelcome(){
+  return '<section class="welcome"><header class="brand"><h1>Mi pauta</h1></header><div class="msg"><h2>Antes de empezar</h2>'
+   +'<p>Esta aplicación de registro es solo para que tengamos una mejor vista de qué cosas se te han dificultado más de la pauta y de tus cambios de estilo de vida.</p>'
+   +'<p class="em">Es importante que lo veamos desde una mirada compasiva, nunca juzgadora.</p>'
+   +'<p>Como nutricionista, jamás te voy a retar ni a enojarme porque no hayas podido seguir las indicaciones. Al contrario, a mí me ayuda mucho a adaptar la pauta a ti como persona y a avanzar mejor hacia tus objetivos.</p>'
+   +'<p class="sign">Nta. Constanza (Demi) Sánchez</p></div><button class="btn big" id="start">Entendido, comenzar</button></section>';
+}
 function render(){
-  var v=tab==='hoy'?viewHoy():tab==='mes'?viewMes():viewPauta();
+  var showW=!state.welcomed||welcome;
+  document.querySelector('.tabs').hidden=showW;
+  var v=showW?viewWelcome():tab==='hoy'?viewHoy():tab==='mes'?viewMes():viewPauta();
   document.getElementById('app').innerHTML=v+'<p class="credit"><span>App creada por <b>Nta. Constanza (Demi) Sánchez</b></span><a href="https://www.instagram.com/nutridemi" target="_blank" rel="noopener">Instagram @nutridemi</a></p>';
   document.querySelectorAll('.tab').forEach(function(b){b.setAttribute('aria-selected',b.dataset.tab===tab)});
 }
@@ -308,6 +327,8 @@ document.addEventListener('click',function(e){
   if(ds.free){var f=gById(ds.free);f.n=f.n>0?0:1;state.custom=true;syncToday();save();render();return}
   if(ds.wstep){state.water=Math.max(0,Math.min(20,state.water+ +ds.wstep));state.custom=true;save();render();return}
   if(ds.del){if(armed===ds.del){state.groups=state.groups.filter(function(x){return x.id!==armed});armed=null;state.custom=true;syncToday();save()}else armed=ds.del;render();return}
+  if(t.id==='start'){state.welcomed=true;welcome=false;save();window.scrollTo(0,0);render();return}
+  if(t.id==='showwelcome'){welcome=true;window.scrollTo(0,0);render();return}
   if(t.id==='install'&&dip){dip.prompt();dip=null;render();return}
   if(t.id==='reset'){if(armed==='reset'){state=fresh();armed=null;sel=null;save()}else armed='reset';render();return}
 });
